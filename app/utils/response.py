@@ -1,40 +1,26 @@
 # app/utils/response.py
 from flask import jsonify
-from typing import Any, Optional
 
-def success(data: Optional[Any] = None, msg: str = "操作成功", code: int = 200):
-    """
-    成功响应（可不带数据）
-    示例：
-      - success() → 返回 {code:200, msg:"操作成功", data:null}
-      - success(staff.to_dict()) → 带数据
-    """
-    return jsonify({
-        "code": code,
-        "msg": msg,
-        "data": data  # 当 data=None 时，JSON 中就是 null
-    }), code
+# 核心成功响应（适配所有接口）
+def success(data=None, message="操作成功", code=200):
+    return jsonify({"code": code, "message": message, "data": data}), code
 
-def created(data: Optional[Any] = None, msg: str = "创建成功"):
-    """201 Created，用于新增资源"""
-    return success(data, msg, code=201)
+# 通用错误响应
+def error(message="操作失败", code=400, data=None):
+    return jsonify({"code": code, "message": message, "data": data}), code
 
-def no_content(msg: str = "操作成功"):
-    """204 No Content，常用于删除成功，不返回 body"""
-    return "", 204
+# 资源不存在（404）
+def not_found(message="资源不存在"):
+    return error(message, 404)
 
-def error(msg: str = "操作失败", code: int = 400, data: Any = None):
-    return jsonify({
-        "code": code,
-        "msg": msg,
-        "data": data
-    }), code
+# 删除成功（204，保留JSON格式，避免前端解析异常）
+def no_content(message="删除成功"):
+    return jsonify({"code": 204, "message": message, "data": None}), 204
 
-def not_found(msg: str = "资源未找到"):
-    return error(msg, code=404)
+# JWT鉴权专用
+def unauthorized(message="未授权访问，请先登录"):
+    return error(message, 401)
 
-def bad_request(msg: str = "请求参数错误"):
-    return error(msg, code=400)
-
-def server_error(msg: str = "服务器内部错误"):
-    return error(msg, code=500)
+# 可选：权限不足（后续扩展用）
+def forbidden(message="权限不足，禁止访问"):
+    return error(message, 403)
