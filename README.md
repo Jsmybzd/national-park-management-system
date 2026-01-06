@@ -1,5 +1,4 @@
-# 数据库课程设计
-1. 分支规则：基于main创建feature/业务模块分支（如feature/enforcement）  
+1. 分支规则：基于main创建feature/业务模块分支
 2. 代码结构：上传app文件夹内的业务代码即可 
 3. 业务线：  
 生物多样性监测  feature/biodiversity  
