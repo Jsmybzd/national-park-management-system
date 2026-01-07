@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>登录 - 国家公园智慧管理系统</title>
+    <link rel="stylesheet" href="/web/assets/css/common.css" />
+    <link rel="stylesheet" href="/web/assets/css/login.css" />
+  </head>
+  <body>
+    <div class="login-page">
+      <div class="login-bg"></div>
+      
+      <!-- 左侧品牌区 -->
+      <div class="login-brand">
+        <div class="login-brand-content">
+          <div class="login-logo">
+            <div class="login-logo-icon">🌲</div>
+            <div class="login-logo-text">国家公园管理系统</div>
+          </div>
+          
+          <h1 class="login-headline">智慧管理<br/>生态保护</h1>
+          <p class="login-tagline">
+            整合环境监测、科研数据、执法监管、游客服务与生物多样性保护，
+            为国家公园提供全方位的数字化管理解决方案。
+          </p>
+          
+          <div class="login-features">
+            <div class="login-feature">
+              <div class="login-feature-icon">📊</div>
+              <div class="login-feature-text">实时环境监测与数据分析</div>
+            </div>
+            <div class="login-feature">
+              <div class="login-feature-icon">🔬</div>
+              <div class="login-feature-text">科研项目与成果管理</div>
+            </div>
+            <div class="login-feature">
+              <div class="login-feature-icon">🛡️</div>
+              <div class="login-feature-text">智能执法调度与监管</div>
+            </div>
+            <div class="login-feature">
+              <div class="login-feature-icon">🦁</div>
+              <div class="login-feature-text">生物多样性保护追踪</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 右侧登录表单 -->
+      <div class="login-form-section">
+        <div class="login-card">
+          <div class="login-card-header">
+            <h2 class="login-card-title">欢迎登录</h2>
+            <p class="login-card-subtitle">使用手机号和密码进行身份验证</p>
+          </div>
+          
+          <form id="loginForm" class="login-form">
+            <div class="login-field">
+              <label class="login-field-label" for="phone">手机号</label>
+              <input 
+                id="phone" 
+                class="login-field-input" 
+                type="tel" 
+                placeholder="请输入手机号"
+                autocomplete="tel"
+                required 
+              />
+            </div>
+            
+            <div class="login-field">
+              <label class="login-field-label" for="password">密码</label>
+              <input 
+                id="password" 
+                class="login-field-input" 
+                type="password" 
+                placeholder="请输入密码"
+                autocomplete="current-password"
+                required 
+              />
+            </div>
+            
+            <button class="login-submit" type="submit" id="submitBtn">
+              登录系统
+            </button>
+            
+            <div id="error" class="login-error" style="display: none">
+              <span>⚠️</span>
+              <span id="errorText"></span>
+            </div>
+            
+            <!-- 新增注册入口 -->
+            <div class="login-register-link" style="margin-top: 15px; text-align: right;">
+              <a href="/web/register.html" style="color: #1890ff; font-size: 14px; text-decoration: none;">
+                还没有账号？立即注册
+              </a>
+            </div>
+          </form>
+          
+          <div class="login-footer">
+            国家公园智慧管理与生态保护系统 v1.0
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/web/assets/js/api.js"></script>
+    <script src="/web/assets/js/auth.js"></script>
+    <script>
+      (function () {
+        // 如果已登录，直接跳转到首页
+        if (window.Auth && Auth.getToken()) {
+          window.location.href = "/web/index.html";
+          return;
+        }
+
+        // 获取DOM元素
+        var form = document.getElementById("loginForm");
+        var phoneEl = document.getElementById("phone");
+        var passwordEl = document.getElementById("password");
+        var errorEl = document.getElementById("error");
+        var errorText = document.getElementById("errorText");
+        var submitBtn = document.getElementById("submitBtn");
+
+        // 显示错误提示
+        function showError(msg) {
+          errorText.textContent = msg || "登录失败";
+          errorEl.style.display = "flex";
+        }
+
+        // 隐藏错误提示
+        function hideError() {
+          errorEl.style.display = "none";
+        }
+
+        // 设置按钮加载状态
+        function setLoading(loading) {
+          submitBtn.disabled = loading;
+          submitBtn.textContent = loading ? "登录中..." : "登录系统";
+        }
+
+        // 表单提交事件
+        form.addEventListener("submit", async function (e) {
+          e.preventDefault();
+          hideError();
+          setLoading(true);
+
+          try {
+            // 构建请求参数
+            var payload = {
+              phone: (phoneEl.value || "").trim(),
+              password: (passwordEl.value || "").trim(),
+            };
+
+            // 基础校验
+            if (!payload.phone) {
+              showError("请输入手机号");
+              setLoading(false);
+              return;
+            }
+            if (!/^1[3-9]\d{9}$/.test(payload.phone)) {
+              showError("请输入正确的手机号格式");
+              setLoading(false);
+              return;
+            }
+            if (!payload.password) {
+              showError("请输入密码");
+              setLoading(false);
+              return;
+            }
+
+            // 调用登录接口
+            var res = await Api.requestJson("POST", "/api/core/login", payload);
+            
+            // 接口响应校验
+            if (!res || !res.token) {
+              showError("登录响应异常，请稍后重试");
+              setLoading(false);
+              return;
+            }
+            
+            // 登录成功，保存token和用户信息
+            Auth.setToken(res.token);
+            Auth.setProfile({
+              user_id: res.user_id,
+              name: res.name,
+              role_type: res.role_type,
+              permissions: res.permissions || [],
+            });
+            
+            // 跳转到首页
+            window.location.href = "/web/index.html";
+          } catch (err) {
+            // 捕获错误并显示
+            showError(Api.formatError(err) || "用户名或密码错误");
+            setLoading(false);
+          }
+        });
+
+        // 输入框聚焦时隐藏错误提示
+        phoneEl.addEventListener("focus", hideError);
+        passwordEl.addEventListener("focus", hideError);
+      })();
+    </script>
+  </body>
+</html>
