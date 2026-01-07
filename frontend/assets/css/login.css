@@ -1,0 +1,306 @@
+/* ========== 登录页面样式 ========== */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 50%, #f0f9ff 100%);
+}
+
+/* 动态背景 */
+.login-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(22, 163, 74, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(14, 165, 233, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(168, 85, 247, 0.05) 0%, transparent 40%);
+}
+
+/* 左侧品牌区 */
+.login-brand {
+  flex: 0 0 55%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 48px;
+  position: relative;
+  z-index: 1;
+}
+
+.login-brand-content {
+  max-width: 480px;
+  width: 100%;
+}
+
+.login-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.login-logo-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: white;
+  box-shadow: 0 8px 24px rgba(22, 163, 74, 0.3);
+}
+
+.login-logo-text {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.login-headline {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 14px;
+  background: linear-gradient(135deg, #1f2937, #16a34a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.login-tagline {
+  font-size: 15px;
+  color: #6b7280;
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+
+.login-features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.login-feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(22, 163, 74, 0.1);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.login-feature:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.login-feature-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.12), rgba(22, 163, 74, 0.04));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.login-feature-text {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.4;
+}
+
+/* 右侧表单区 */
+.login-form-section {
+  flex: 0 0 45%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(20px);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 36px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+}
+
+.login-card-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.login-card-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 6px;
+}
+
+.login-card-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login-field-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.login-field-input {
+  padding: 12px 14px;
+  font-size: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  color: #1f2937;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.login-field-input:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+  background: #ffffff;
+}
+
+.login-field-input::placeholder {
+  color: #9ca3af;
+}
+
+.login-submit {
+  margin-top: 6px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.25);
+}
+
+.login-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.35);
+}
+
+.login-submit:active {
+  transform: translateY(0);
+}
+
+.login-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.login-error {
+  padding: 12px 14px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 10px;
+  color: #dc2626;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.login-footer {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* 响应式 */
+@media (max-width: 1024px) {
+  .login-brand {
+    flex: 0 0 50%;
+    padding: 32px;
+  }
+  
+  .login-form-section {
+    flex: 0 0 50%;
+    padding: 32px;
+  }
+  
+  .login-headline {
+    font-size: 28px;
+  }
+  
+  .login-features {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .login-page {
+    flex-direction: column;
+  }
+  
+  .login-brand {
+    flex: none;
+    padding: 32px 24px;
+  }
+  
+  .login-brand-content {
+    text-align: center;
+    margin: 0 auto;
+  }
+  
+  .login-logo {
+    justify-content: center;
+  }
+  
+  .login-headline {
+    font-size: 26px;
+  }
+  
+  .login-features {
+    display: none;
+  }
+  
+  .login-form-section {
+    flex: none;
+    width: 100%;
+    padding: 24px;
+  }
+}
+
