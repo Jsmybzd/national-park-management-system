@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>公园信息 - 国家公园游客服务</title>
+    <link rel="stylesheet" href="/web/assets/css/common.css" />
+    <style>
+      .page-header { margin-bottom: 32px; }
+      .page-title { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+      .page-desc { color: var(--text-muted); font-size: 14px; }
+      
+      .hero-banner { background: linear-gradient(135deg, #16a34a, #0d9488); color: white; border-radius: 20px; padding: 48px; margin-bottom: 32px; position: relative; overflow: hidden; }
+      .hero-banner::before { content: '🏞️'; position: absolute; right: 40px; top: 50%; transform: translateY(-50%); font-size: 120px; opacity: 0.15; }
+      .hero-title { font-size: 32px; font-weight: 700; margin-bottom: 12px; }
+      .hero-sub { font-size: 16px; opacity: 0.9; max-width: 500px; line-height: 1.6; }
+      
+      .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-bottom: 32px; }
+      @media (max-width: 768px) { .info-grid { grid-template-columns: 1fr; } }
+      
+      .info-card { background: white; border: 1px solid var(--border); border-radius: 16px; padding: 28px; }
+      .info-card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+      .info-card-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+      .info-card-icon.green { background: linear-gradient(135deg, rgba(22,163,74,0.15), rgba(22,163,74,0.05)); }
+      .info-card-icon.blue { background: linear-gradient(135deg, rgba(14,165,233,0.15), rgba(14,165,233,0.05)); }
+      .info-card-icon.orange { background: linear-gradient(135deg, rgba(249,115,22,0.15), rgba(249,115,22,0.05)); }
+      .info-card-icon.purple { background: linear-gradient(135deg, rgba(168,85,247,0.15), rgba(168,85,247,0.05)); }
+      .info-card-title { font-size: 18px; font-weight: 600; }
+      .info-card-body { color: var(--text-secondary); font-size: 14px; line-height: 1.8; }
+      .info-list { list-style: none; padding: 0; margin: 0; }
+      .info-list li { padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+      .info-list li:last-child { border-bottom: none; }
+      .info-list .label { color: var(--text-muted); }
+      .info-list .value { font-weight: 500; }
+      
+      .section-title { font-size: 20px; font-weight: 600; margin: 40px 0 20px; display: flex; align-items: center; gap: 12px; }
+      .section-title::after { content: ''; flex: 1; height: 1px; background: var(--glass-border); }
+      
+      .area-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+      @media (max-width: 1024px) { .area-grid { grid-template-columns: repeat(2, 1fr); } }
+      @media (max-width: 600px) { .area-grid { grid-template-columns: 1fr; } }
+      
+      .area-card { background: white; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; transition: all 0.2s; }
+      .area-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.1); }
+      .area-card-img { height: 120px; background: linear-gradient(135deg, #e0f2fe, #dbeafe); display: flex; align-items: center; justify-content: center; font-size: 48px; }
+      .area-card-body { padding: 20px; }
+      .area-card-name { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+      .area-card-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+      .area-card-capacity { margin-top: 12px; font-size: 12px; color: var(--primary); display: flex; align-items: center; gap: 6px; }
+      
+      .notice-card { background: #fefce8; border: 1px solid #fde047; border-radius: 16px; padding: 24px; margin-top: 32px; }
+      .notice-card-title { font-size: 16px; font-weight: 600; color: #a16207; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+      .notice-card-body { font-size: 14px; color: #854d0e; line-height: 1.8; }
+      .notice-card-body ul { margin: 12px 0 0 20px; }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside id="sidebar" class="sidebar"></aside>
+      <div class="main">
+        <header id="header" class="header"></header>
+        <main class="content container">
+          <div class="page-header">
+            <h1 class="page-title">🏞️ 公园信息</h1>
+            <p class="page-desc">了解公园开放时间、游览区域和入园须知</p>
+          </div>
+          
+          <!-- 顶部横幅 -->
+          <div class="hero-banner">
+            <div class="hero-title">欢迎来到国家公园</div>
+            <div class="hero-sub">这里是自然与生态的天堂，拥有丰富的野生动植物资源和壮丽的自然风光。请遵守公园规定，共同保护生态环境。</div>
+          </div>
+          
+          <!-- 基本信息 -->
+          <div class="info-grid">
+            <div class="info-card">
+              <div class="info-card-header">
+                <div class="info-card-icon green">🕐</div>
+                <div class="info-card-title">开放时间</div>
+              </div>
+              <div class="info-card-body">
+                <ul class="info-list">
+                  <li><span class="label">夏季 (4月-10月)</span><span class="value">08:00 - 18:00</span></li>
+                  <li><span class="label">冬季 (11月-3月)</span><span class="value">08:30 - 17:00</span></li>
+                  <li><span class="label">售票截止</span><span class="value">闭园前1小时</span></li>
+                  <li><span class="label">周末/节假日</span><span class="value">正常开放</span></li>
+                </ul>
+              </div>
+            </div>
+            
+            <div class="info-card">
+              <div class="info-card-header">
+                <div class="info-card-icon blue">💰</div>
+                <div class="info-card-title">票务信息</div>
+              </div>
+              <div class="info-card-body">
+                <ul class="info-list">
+                  <li><span class="label">成人票</span><span class="value">¥120 / 人</span></li>
+                  <li><span class="label">学生票</span><span class="value">¥60 / 人</span></li>
+                  <li><span class="label">儿童票 (1.2m以下)</span><span class="value">免费</span></li>
+                  <li><span class="label">老年票 (65岁以上)</span><span class="value">¥60 / 人</span></li>
+                </ul>
+              </div>
+            </div>
+            
+            <div class="info-card">
+              <div class="info-card-header">
+                <div class="info-card-icon orange">📞</div>
+                <div class="info-card-title">联系方式</div>
+              </div>
+              <div class="info-card-body">
+                <ul class="info-list">
+                  <li><span class="label">咨询电话</span><span class="value">400-123-4567</span></li>
+                  <li><span class="label">救援电话</span><span class="value">400-123-4568</span></li>
+                  <li><span class="label">投诉建议</span><span class="value">400-123-4569</span></li>
+                  <li><span class="label">官方邮箱</span><span class="value">park@example.com</span></li>
+                </ul>
+              </div>
+            </div>
+            
+            <div class="info-card">
+              <div class="info-card-header">
+                <div class="info-card-icon purple">🚗</div>
+                <div class="info-card-title">交通指南</div>
+              </div>
+              <div class="info-card-body">
+                <ul class="info-list">
+                  <li><span class="label">自驾</span><span class="value">导航"国家公园东门"</span></li>
+                  <li><span class="label">公交</span><span class="value">乘坐101路至公园站</span></li>
+                  <li><span class="label">地铁</span><span class="value">2号线公园站B出口</span></li>
+                  <li><span class="label">停车场</span><span class="value">东门/北门均有</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 游览区域 -->
+          <div class="section-title">🗺️ 游览区域</div>
+          <div class="area-grid" id="areaGrid">
+            <div class="area-card">
+              <div class="area-card-img">🌲</div>
+              <div class="area-card-body">
+                <div class="area-card-name">原始森林区</div>
+                <div class="area-card-desc">保存完好的原始森林，可观赏珍稀植物和野生动物</div>
+                <div class="area-card-capacity">👥 最大容量: 500人</div>
+              </div>
+            </div>
+            <div class="area-card">
+              <div class="area-card-img">🏔️</div>
+              <div class="area-card-body">
+                <div class="area-card-name">高山草甸区</div>
+                <div class="area-card-desc">海拔3000米以上的高山草甸，风景壮丽</div>
+                <div class="area-card-capacity">👥 最大容量: 300人</div>
+              </div>
+            </div>
+            <div class="area-card">
+              <div class="area-card-img">💧</div>
+              <div class="area-card-body">
+                <div class="area-card-name">湿地湖泊区</div>
+                <div class="area-card-desc">珍稀水禽栖息地，生态观鸟胜地</div>
+                <div class="area-card-capacity">👥 最大容量: 400人</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 游览须知 -->
+          <div class="notice-card">
+            <div class="notice-card-title">⚠️ 入园须知</div>
+            <div class="notice-card-body">
+              为了您的安全和公园生态保护，请遵守以下规定：
+              <ul>
+                <li>请提前预约入园，凭预约码和有效身份证件入园</li>
+                <li>禁止携带火种、易燃易爆物品入园</li>
+                <li>请勿投喂、惊扰野生动物，保持安全距离</li>
+                <li>请勿采摘植物、捕捉动物</li>
+                <li>请勿在非指定区域露营、野炊</li>
+                <li>请将垃圾带出公园或投入指定垃圾桶</li>
+                <li>遇紧急情况请拨打救援电话或联系最近的工作人员</li>
+              </ul>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script src="/web/assets/js/api.js"></script>
+    <script src="/web/assets/js/auth.js"></script>
+    <script src="/web/assets/js/common.js"></script>
+    <script>
+      (function() {
+        if (!Auth.requireLogin()) return;
+        Common.initLayout({ active: "park-info" });
+      })();
+    </script>
+  </body>
+</html>

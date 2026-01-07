@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>生态环境监测 - 国家公园智慧管理系统</title>
+    <link rel="stylesheet" href="/web/assets/css/common.css" />
+    <link rel="stylesheet" href="/web/assets/css/visitor.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+      /* 环境监测表格美化 */
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      }
+      .data-table thead {
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+      }
+      .data-table th {
+        padding: 14px 16px;
+        text-align: center;
+        font-weight: 600;
+        color: #166534;
+        font-size: 13px;
+        border-bottom: 2px solid #16a34a;
+      }
+      .data-table td {
+        padding: 12px 16px;
+        text-align: center;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 13px;
+        color: #374151;
+      }
+      .data-table tbody tr:hover {
+        background: #f0fdf4;
+      }
+      .data-table tbody tr:last-child td {
+        border-bottom: none;
+      }
+      /* 状态标签 */
+      .tag {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+      .tag-success { background: #dcfce7; color: #166534; }
+      .tag-warning { background: #fef3c7; color: #92400e; }
+      .tag-danger { background: #fee2e2; color: #991b1b; }
+      .tag-info { background: #dbeafe; color: #1e40af; }
+      /* 表格容器居中 */
+      #indicesTable, #devicesTable, #dataTable, #calibrationTable {
+        max-width: 100%;
+        margin: 0 auto;
+      }
+      /* 筛选栏样式 */
+      .filter-bar {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 12px 16px;
+        background: #f8fafc;
+        border-radius: 8px;
+      }
+      .filter-bar select {
+        min-width: 140px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside id="sidebar" class="sidebar"></aside>
+      <div class="main">
+        <header id="header" class="header"></header>
+        <main class="content container">
+          <!-- 页面标题 -->
+          <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <h1 class="page-title">🌡️ 生态环境监测</h1>
+              <p class="page-subtitle">物联网设备实时采集、异常预警、设备校准管理</p>
+            </div>
+            <button class="btn btn-primary" onclick="EnvironmentPage.exportReport()">📊 导出报告</button>
+          </div>
+
+          <!-- 异常预警横幅 -->
+          <div id="alertBanner" style="display:none; padding: 12px 16px; background: linear-gradient(90deg, #fee2e2, #fecaca); border-left: 4px solid #dc2626; border-radius: 4px; margin-bottom: 16px;">
+            <strong>🚨 异常预警</strong>：<span id="alertText">检测到环境数据异常</span>
+          </div>
+
+          <!-- 统计卡片 -->
+          <div class="grid grid-4" style="margin-bottom: 24px;">
+            <div class="stat-card">
+              <div class="stat-icon">📊</div>
+              <div class="stat-value" id="statIndices">--</div>
+              <div class="stat-label">监测指标</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon accent">📡</div>
+              <div class="stat-value" id="statDevices">--</div>
+              <div class="stat-label">在线设备</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon warning">⚠️</div>
+              <div class="stat-value" id="statAbnormal">--</div>
+              <div class="stat-label">异常数据</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon info">🔧</div>
+              <div class="stat-value" id="statCalibration">--</div>
+              <div class="stat-label">待校准设备</div>
+            </div>
+          </div>
+
+          <!-- 实时监测图表 -->
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div class="card-title">📈 实时环境监测数据</div>
+                <div class="card-subtitle">物联网设备每5秒自动采集上传</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <span id="liveIndicator" style="display:flex;align-items:center;gap:4px;color:#16a34a;font-size:13px;">
+                  <span style="width:8px;height:8px;background:#16a34a;border-radius:50%;animation:pulse 1s infinite;"></span> 实时采集中
+                </span>
+                <button class="btn btn-sm btn-primary" id="toggleSimulationBtn" onclick="EnvironmentPage.toggleSimulation()">▶️ 开启模拟</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="grid grid-2" style="gap: 20px;">
+                <div class="chart-container" style="height: 250px;">
+                  <canvas id="airQualityChart"></canvas>
+                </div>
+                <div class="chart-container" style="height: 250px;">
+                  <canvas id="waterQualityChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 选项卡 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="tabs" id="tabs">
+                <button class="tab active" data-tab="indices">监测指标</button>
+                <button class="tab" data-tab="devices">监测设备</button>
+                <button class="tab" data-tab="data">环境数据</button>
+                <button class="tab" data-tab="calibration">校准记录</button>
+                <button class="tab" data-tab="alerts">🚨 预警信息</button>
+              </div>
+              <button class="btn btn-primary" id="createBtn">➕ 新增</button>
+            </div>
+            <div class="card-body">
+              <!-- 监测指标 -->
+              <div class="tab-content active" id="tab-indices">
+                <div class="notice notice-info" style="margin-bottom:16px;">
+                  📋 监测指标定义环境参数的标准阈值，超出阈值的数据将自动标记为异常
+                </div>
+                <div id="indicesTable"></div>
+              </div>
+              
+              <!-- 监测设备 -->
+              <div class="tab-content" id="tab-devices">
+                <div class="notice notice-info" style="margin-bottom:16px;">
+                  📡 监测设备状态每小时自动更新，故障设备会触发提醒。校准周期到期需及时校准
+                </div>
+                <div id="devicesTable"></div>
+              </div>
+              
+              <!-- 环境数据 -->
+              <div class="tab-content" id="tab-data">
+                <div class="filter-bar">
+                  <span style="font-weight:500;color:#374151;">🔍 筛选条件：</span>
+                  <select class="field-select" id="dataFilterIndex">
+                    <option value="">全部指标</option>
+                  </select>
+                  <select class="field-select" id="dataFilterArea">
+                    <option value="">全部区域</option>
+                    <option value="1">核心保护区</option>
+                    <option value="2">缓冲区</option>
+                    <option value="3">实验区</option>
+                  </select>
+                  <select class="field-select" id="dataFilterAbnormal">
+                    <option value="">全部数据</option>
+                    <option value="1">仅异常数据</option>
+                    <option value="0">仅正常数据</option>
+                  </select>
+                  <button class="btn btn-primary" onclick="EnvironmentPage.filterData()">应用筛选</button>
+                  <button class="btn btn-secondary" onclick="EnvironmentPage.resetFilter()">重置</button>
+                </div>
+                <div id="dataTable"></div>
+              </div>
+              
+              <!-- 校准记录 -->
+              <div class="tab-content" id="tab-calibration">
+                <div class="notice notice-info" style="margin-bottom:16px;">
+                  🔧 技术人员定期校准监测设备，确保数据准确性。校准后自动更新设备状态
+                </div>
+                <div id="calibrationTable"></div>
+              </div>
+              
+              <!-- 预警信息 -->
+              <div class="tab-content" id="tab-alerts">
+                <div class="notice notice-warning" style="margin-bottom:16px;">
+                  🚨 系统自动对比监测值与标准阈值，生成异常数据预警。包含设备故障预警和环境数据超标预警
+                </div>
+                <div id="alertsTable"></div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script src="/web/assets/js/api.js"></script>
+    <script src="/web/assets/js/auth.js"></script>
+    <script src="/web/assets/js/common.js"></script>
+    <script src="/web/assets/js/environment.js"></script>
+    <script>
+      (function () {
+        if (!Auth.requireLogin()) return;
+        Common.initLayout({ active: "environment", pageTitle: "环境监测" }).then(function (ctx) {
+          EnvironmentPage.init(ctx.profile);
+        });
+      })();
+    </script>
+  </body>
+</html>
+

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>生物多样性 - 国家公园智慧管理系统</title>
+    <link rel="stylesheet" href="/web/assets/css/common.css" />
+    <link rel="stylesheet" href="/web/assets/css/visitor.css" />
+    <style>
+      /* 生物多样性表格美化 */
+      .data-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+      .data-table thead { background: linear-gradient(135deg, #059669, #10b981); }
+      .data-table th { padding: 14px 12px; text-align: center; font-weight: 600; color: #fff; font-size: 13px; letter-spacing: 0.5px; }
+      .data-table td { padding: 12px; text-align: center; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
+      .data-table tbody tr { transition: all 0.2s ease; }
+      .data-table tbody tr:hover { background: linear-gradient(90deg, #ecfdf5, #d1fae5); transform: scale(1.005); }
+      .data-table tbody tr:nth-child(even) { background: #f0fdf4; }
+      .data-table tbody tr:nth-child(even):hover { background: linear-gradient(90deg, #ecfdf5, #d1fae5); }
+      
+      /* 标签样式 */
+      .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+      .tag-success { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #166534; }
+      .tag-warning { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; }
+      .tag-danger { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #991b1b; }
+      .tag-info { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1e40af; }
+      .tag-purple { background: linear-gradient(135deg, #f3e8ff, #e9d5ff); color: #7c3aed; }
+      
+      /* 按钮动画 */
+      .btn { transition: all 0.2s ease; }
+      .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+      
+      /* 统计卡片优化 */
+      .stat-card { background: linear-gradient(135deg, #fff, #ecfdf5); border: 1px solid #bbf7d0; }
+      .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16,185,129,0.15); }
+      
+      /* 表单样式 */
+      .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+      .field-label { display: block; font-weight: 500; color: #374151; margin-bottom: 6px; font-size: 13px; }
+      .field-input, .field-select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; transition: all 0.2s; }
+      .field-input:focus, .field-select:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); outline: none; }
+      textarea.field-input { resize: vertical; min-height: 60px; }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside id="sidebar" class="sidebar"></aside>
+      <div class="main">
+        <header id="header" class="header"></header>
+        <main class="content container">
+          <div class="page-header">
+            <h1 class="page-title">🦋 生物多样性</h1>
+            <p class="page-subtitle">物种档案管理、栖息地监测、迁徙追踪、保护计划</p>
+          </div>
+
+          <div class="grid grid-4" style="margin-bottom: 24px;">
+            <div class="stat-card">
+              <div class="stat-icon">🦁</div>
+              <div class="stat-value" id="statSpecies">--</div>
+              <div class="stat-label">物种记录</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon accent">🏔️</div>
+              <div class="stat-value" id="statHabitats">--</div>
+              <div class="stat-label">栖息地</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon warning">🔴</div>
+              <div class="stat-value" id="statEndangered">--</div>
+              <div class="stat-label">濒危物种</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon info">📍</div>
+              <div class="stat-value" id="statObservations">--</div>
+              <div class="stat-label">观测记录</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="tabs" id="tabs">
+                <button class="tab active" data-tab="species">物种档案</button>
+                <button class="tab" data-tab="habitats">栖息地</button>
+                <button class="tab" data-tab="observations">观测记录</button>
+              </div>
+              <button class="btn btn-primary" id="createBtn">➕ 新增</button>
+            </div>
+            <div class="card-body">
+              <div class="tab-content active" id="tab-species">
+                <div id="speciesTable"></div>
+              </div>
+              
+              <div class="tab-content" id="tab-habitats">
+                <div id="habitatsTable"></div>
+              </div>
+              
+              <div class="tab-content" id="tab-observations">
+                <div id="observationsTable"></div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script src="/web/assets/js/api.js"></script>
+    <script src="/web/assets/js/auth.js"></script>
+    <script src="/web/assets/js/common.js"></script>
+    <script src="/web/assets/js/biodiversity.js?v=20260106"></script>
+    <script>
+      (function () {
+        if (!Auth.requireLogin()) return;
+        Common.initLayout({ active: "biodiversity", pageTitle: "生物多样性" }).then(function (ctx) {
+          BiodiversityPage.init(ctx.profile);
+        });
+      })();
+    </script>
+  </body>
+</html>
+

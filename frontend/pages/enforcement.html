@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>执法监管 - 国家公园智慧管理系统</title>
+    <link rel="stylesheet" href="/web/assets/css/common.css" />
+    <link rel="stylesheet" href="/web/assets/css/visitor.css" />
+    <style>
+      /* 美化表格样式 */
+      .enforcement-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+      .enforcement-table thead { background: linear-gradient(135deg, #f59e0b, #d97706); }
+      .enforcement-table th { padding: 14px 12px; text-align: center; font-weight: 600; color: #fff; font-size: 13px; letter-spacing: 0.5px; }
+      .enforcement-table td { padding: 12px; text-align: center; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
+      .enforcement-table tbody tr { transition: all 0.2s ease; }
+      .enforcement-table tbody tr:hover { background: linear-gradient(90deg, #fffbeb, #fef3c7); transform: scale(1.005); }
+      .enforcement-table tbody tr:nth-child(even) { background: #fefce8; }
+      .enforcement-table tbody tr:nth-child(even):hover { background: linear-gradient(90deg, #fffbeb, #fef3c7); }
+      .enforcement-table tbody tr.row-danger { background: linear-gradient(90deg, #fef2f2, #fee2e2) !important; }
+      .enforcement-table tbody tr.row-danger:hover { background: linear-gradient(90deg, #fee2e2, #fecaca) !important; }
+      
+      /* 标签样式 */
+      .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+      .tag-success { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #166534; }
+      .tag-warning { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; }
+      .tag-danger { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #991b1b; }
+      .tag-info { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1e40af; }
+      .tag-purple { background: linear-gradient(135deg, #f3e8ff, #e9d5ff); color: #7c3aed; }
+      
+      /* 筛选栏 */
+      .filter-bar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; padding: 14px 18px; background: linear-gradient(90deg, #f8fafc, #f1f5f9); border-radius: 12px; border: 1px solid #e2e8f0; }
+      
+      /* 预警横幅 */
+      .alert-banner { padding: 14px 18px; background: linear-gradient(90deg, #fef3c7, #fde68a); border-left: 4px solid #f59e0b; border-radius: 8px; margin-bottom: 16px; display: none; box-shadow: 0 2px 8px rgba(245,158,11,0.2); }
+      .alert-banner.danger { background: linear-gradient(90deg, #fee2e2, #fecaca); border-left-color: #dc2626; animation: pulse-danger 2s infinite; }
+      
+      @keyframes pulse-danger {
+        0%, 100% { box-shadow: 0 2px 8px rgba(220,38,38,0.3); }
+        50% { box-shadow: 0 4px 16px rgba(220,38,38,0.5); }
+      }
+      
+      /* 按钮动画 */
+      .btn { transition: all 0.2s ease; }
+      .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+      
+      /* 图片上传预览 */
+      .image-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+      .image-preview img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #e5e7eb; }
+      .image-upload-area { border: 2px dashed #d1d5db; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; }
+      .image-upload-area:hover { border-color: #f59e0b; background: #fffbeb; }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside id="sidebar" class="sidebar"></aside>
+      <div class="main">
+        <header id="header" class="header"></header>
+        <main class="content container">
+          <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <h1 class="page-title">🛡️ 执法监管</h1>
+              <p class="page-subtitle">智能视频监控、非法行为识别、执法人员调度、全流程跟踪</p>
+            </div>
+            <button class="btn btn-danger" onclick="EnforcementPage.simulateAlert()">🚨 模拟预警</button>
+          </div>
+
+          <!-- 预警横幅 -->
+          <div id="alertBanner" class="alert-banner danger">
+            <strong>🚨 智能预警</strong>：<span id="alertText">检测到非法行为</span>
+            <button class="btn btn-sm btn-danger" onclick="EnforcementPage.handleAlert()" style="margin-left:12px;">立即调度</button>
+          </div>
+
+          <!-- 统计卡片 -->
+          <div class="grid grid-4" style="margin-bottom: 24px;">
+            <div class="stat-card">
+              <div class="stat-icon">👮</div>
+              <div class="stat-value" id="statStaff">--</div>
+              <div class="stat-label">执法人员</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon accent">📹</div>
+              <div class="stat-value" id="statMonitors">--</div>
+              <div class="stat-label">视频监控点</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon warning">⚠️</div>
+              <div class="stat-value" id="statRecords">--</div>
+              <div class="stat-label">非法行为记录</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon info">🚗</div>
+              <div class="stat-value" id="statDispatch">--</div>
+              <div class="stat-label">待处理调度</div>
+            </div>
+          </div>
+
+          <!-- 选项卡 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="tabs" id="tabs">
+                <button class="tab active" data-tab="staff">执法人员</button>
+                <button class="tab" data-tab="monitors">视频监控点</button>
+                <button class="tab" data-tab="records">非法行为记录</button>
+                <button class="tab" data-tab="dispatch">执法调度</button>
+                <button class="tab" data-tab="alerts">🚨 预警中心</button>
+              </div>
+              <button class="btn btn-primary" id="createBtn">➕ 新增</button>
+            </div>
+            <div class="card-body">
+              <div id="notice" class="notice notice-warning" style="display: none"></div>
+              
+              <!-- 执法人员 -->
+              <div class="tab-content active" id="tab-staff">
+                <div class="notice notice-info" style="margin-bottom:16px;">
+                  👮 执法人员信息管理，包含ID、姓名、部门、权限、联系方式、设备编号
+                </div>
+                <div id="staffTable"></div>
+              </div>
+              
+              <!-- 视频监控点 -->
+              <div class="tab-content" id="tab-monitors">
+                <div class="notice notice-info" style="margin-bottom:16px;">
+                  📹 视频监控点管理，监控点编号唯一，数据存储周期默认90天，核心区域可延长至180天
+                </div>
+                <div id="monitorsTable"></div>
+              </div>
+              
+              <!-- 非法行为记录 -->
+              <div class="tab-content" id="tab-records">
+                <div class="filter-bar">
+                  <span style="font-weight:500;">🔍 筛选：</span>
+                  <select class="field-select" id="filterStatus" style="width:120px;">
+                    <option value="">全部状态</option>
+                    <option value="未处理">未处理</option>
+                    <option value="处理中">处理中</option>
+                    <option value="已结案">已结案</option>
+                  </select>
+                  <select class="field-select" id="filterType" style="width:120px;">
+                    <option value="">全部类型</option>
+                    <option value="非法进入">非法进入</option>
+                    <option value="盗猎">盗猎</option>
+                    <option value="破坏植被">破坏植被</option>
+                    <option value="非法采集">非法采集</option>
+                    <option value="其他">其他</option>
+                  </select>
+                  <button class="btn btn-primary" onclick="EnforcementPage.filterRecords()">筛选</button>
+                  <button class="btn btn-secondary" onclick="EnforcementPage.resetFilter()">重置</button>
+                </div>
+                <div id="recordsTable"></div>
+              </div>
+              
+              <!-- 执法调度 -->
+              <div class="tab-content" id="tab-dispatch">
+                <div class="notice notice-info" style="margin-bottom:16px;">
+                  🚗 执法调度信息，与非法行为记录、执法人员强关联，跟踪处置全流程
+                </div>
+                <div id="dispatchTable"></div>
+              </div>
+              
+              <!-- 预警中心 -->
+              <div class="tab-content" id="tab-alerts">
+                <div class="notice notice-warning" style="margin-bottom:16px;">
+                  🚨 智能视频监控自动识别非法行为，生成预警并触发就近执法人员调度
+                </div>
+                <div id="alertsTable"></div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script src="/web/assets/js/api.js"></script>
+    <script src="/web/assets/js/auth.js"></script>
+    <script src="/web/assets/js/common.js"></script>
+    <script src="/web/assets/js/enforcement.js"></script>
+    <script>
+      (function () {
+        if (!Auth.requireLogin()) return;
+        Common.initLayout({ active: "enforcement", pageTitle: "执法监管" }).then(function (ctx) {
+          EnforcementPage.init(ctx.profile);
+        });
+      })();
+    </script>
+  </body>
+</html>
+

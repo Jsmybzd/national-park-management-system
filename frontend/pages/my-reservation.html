@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>预约入园 - 国家公园游客服务</title>
+    <link rel="stylesheet" href="/web/assets/css/common.css" />
+    <style>
+      .page-header { margin-bottom: 24px; }
+      .page-title { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+      .page-desc { color: var(--text-muted); font-size: 14px; }
+      
+      .reservation-form-card { background: white; border: 1px solid var(--border); border-radius: 16px; padding: 32px; margin-bottom: 24px; }
+      .form-title { font-size: 18px; font-weight: 600; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+      .form-title::before { content: '📝'; }
+      .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+      @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } }
+      .form-group { display: flex; flex-direction: column; gap: 8px; }
+      .form-group.full { grid-column: 1 / -1; }
+      .form-label { font-size: 14px; font-weight: 500; color: var(--text-secondary); }
+      .form-label .required { color: #ef4444; }
+      .form-input, .form-select, .form-textarea { padding: 12px 14px; font-size: 14px; border: 1px solid #e5e7eb; border-radius: 10px; background: #f9fafb; outline: none; transition: all 0.2s; }
+      .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(22,163,74,0.1); background: white; }
+      .form-textarea { resize: vertical; min-height: 80px; }
+      .form-actions { margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end; }
+      
+      .section-title { font-size: 18px; font-weight: 600; margin: 32px 0 16px; display: flex; align-items: center; gap: 10px; }
+      .section-title::after { content: ''; flex: 1; height: 1px; background: var(--glass-border); }
+      
+      .reservation-list { display: flex; flex-direction: column; gap: 16px; }
+      .reservation-card { background: white; border: 1px solid var(--border); border-radius: 16px; padding: 24px; transition: all 0.2s; }
+      .reservation-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+      .reservation-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+      .reservation-id { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+      .reservation-title { font-size: 18px; font-weight: 600; }
+      .reservation-body { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+      @media (max-width: 768px) { .reservation-body { grid-template-columns: repeat(2, 1fr); } }
+      .reservation-field { min-width: 0; }
+      .reservation-field-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+      .reservation-field-value { font-size: 14px; font-weight: 500; }
+      .reservation-footer { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+      .reservation-time { font-size: 12px; color: var(--text-muted); }
+      
+      .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500; }
+      .status-badge.pending { background: #fef3c7; color: #b45309; }
+      .status-badge.approved { background: #d1fae5; color: #047857; }
+      .status-badge.rejected { background: #fee2e2; color: #b91c1c; }
+      .status-badge.completed { background: #e0e7ff; color: #4338ca; }
+      .status-badge.cancelled { background: #f3f4f6; color: #6b7280; }
+      
+      .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+      .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+      .empty-state-text { font-size: 15px; margin-bottom: 20px; }
+      
+      .payment-status { display: inline-flex; align-items: center; gap: 4px; }
+      .payment-status.paid { color: #047857; }
+      .payment-status.unpaid { color: #b91c1c; }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside id="sidebar" class="sidebar"></aside>
+      <div class="main">
+        <header id="header" class="header"></header>
+        <main class="content container">
+          <div class="page-header">
+            <h1 class="page-title">🎫 预约入园</h1>
+            <p class="page-desc">在线预约入园时间，查看预约状态和审核结果</p>
+          </div>
+          
+          <!-- 预约表单 -->
+          <div class="reservation-form-card">
+            <div class="form-title">新建预约</div>
+            <form id="reservationForm">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">预约人姓名 <span class="required">*</span></label>
+                  <input type="text" class="form-input" id="visitorName" required placeholder="请输入姓名" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">身份证号 <span class="required">*</span></label>
+                  <input type="text" class="form-input" id="idCardNo" required placeholder="请输入身份证号" maxlength="18" />
+                </div>
+                <!-- 公园选择 -->
+                <div class="form-group">
+                  <label class="form-label">选择公园 <span class="required">*</span></label>
+                  <select class="form-select" id="areaId" required>
+                    <option value="">请选择公园</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">预约日期 <span class="required">*</span></label>
+                  <input type="date" class="form-input" id="reserveDate" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">预约时段 <span class="required">*</span></label>
+                  <select class="form-select" id="timeSlot" required>
+                    <option value="">请选择时段</option>
+                    <option value="上午">上午</option>
+                    <option value="下午">下午</option>
+                    <option value="全天">全天</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">预约人数 <span class="required">*</span></label>
+                  <input type="number" class="form-input" id="partySize" min="1" max="20" value="1" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">联系电话</label>
+                  <input type="tel" class="form-input" id="phone" placeholder="选填" />
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn" onclick="document.getElementById('reservationForm').reset(); initFormDefaults();">重置</button>
+                <button type="submit" class="btn btn-primary">提交预约</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- 预约记录列表 -->
+          <div class="section-title">📋 我的预约记录</div>
+          <div class="reservation-list" id="reservationList">
+            <div class="loading">加载中...</div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script src="/web/assets/js/api.js"></script>
+    <script src="/web/assets/js/auth.js"></script>
+    <script src="/web/assets/js/common.js"></script>
+    <script>
+      (function() {
+        if (!Auth.requireLogin()) return;
+
+        var profile = null;
+
+        Common.initLayout({ active: "my-reservation" }).then(function(ctx) {
+          profile = ctx.profile;
+          initForm();
+          loadReservations();
+        });
+
+        // 加载公园列表
+        async function loadParks() {
+          try {
+            const areas = await Api.requestJson("GET", "/api/visitor/areas");
+            const select = document.getElementById("areaId");
+            select.innerHTML = '<option value="">请选择公园</option>';
+            areas.forEach(area => {
+              const option = document.createElement("option");
+              option.value = area.area_id;
+              option.textContent = area.area_name;
+              select.appendChild(option);
+            });
+          } catch (e) {
+            Common.showToast("加载公园列表失败: " + Api.formatError(e), "error");
+          }
+        }
+
+        function initForm() {
+          initFormDefaults();
+          loadParks();
+          document.getElementById("reservationForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+            submitReservation();
+          });
+        }
+
+        function initFormDefaults() {
+          var tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          document.getElementById("reserveDate").min = tomorrow.toISOString().split("T")[0];
+
+          if (profile) {
+            document.getElementById("visitorName").value = profile.name || "";
+            document.getElementById("phone").value = profile.phone || "";
+          }
+        }
+
+        // ✅ 修正后的 submitReservation —— 单一、无嵌套、语法正确
+        async function submitReservation() {
+          const visitorName = document.getElementById("visitorName").value.trim();
+          const idCardNo = document.getElementById("idCardNo").value.trim();
+          const reserveDate = document.getElementById("reserveDate").value;
+          const timeSlot = document.getElementById("timeSlot").value;
+          const partySize = parseInt(document.getElementById("partySize").value) || 1;
+          const phone = document.getElementById("phone").value.trim();
+          const areaId = document.getElementById("areaId").value.trim();
+
+          if (!visitorName || !idCardNo || !reserveDate || !timeSlot || !areaId) {
+            Common.showToast("请填写所有必填项", "error");
+            return;
+          }
+
+          if (idCardNo.length < 5) {
+            Common.showToast("请输入有效的身份证号", "error");
+            return;
+          }
+
+          try {
+            await Api.requestJson("POST", "/api/visitor/reservations", {
+              visitor_name: visitorName,
+              id_card_no: idCardNo,
+              reserve_date: reserveDate,
+              time_slot: timeSlot,
+              party_size: partySize,
+              phone: phone || null,
+              area_id: parseInt(areaId)
+            });
+
+            Common.showToast("✅ 预约提交成功，请等待审核", "success");
+            document.getElementById("reservationForm").reset();
+            initFormDefaults();
+            loadReservations();
+          } catch (e) {
+            Common.showToast("预约失败: " + Api.formatError(e), "error");
+          }
+        }
+
+        async function loadReservations() {
+          const container = document.getElementById("reservationList");
+          try {
+            const reservations = await Api.requestJson("GET", "/api/visitor/reservations/me") || [];
+
+            if (reservations.length === 0) {
+              container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">暂无预约记录</div></div>';
+              return;
+            }
+
+            let html = '';
+            reservations.forEach(r => {
+              const status = r.reserve_status || "待审核";
+              const statusClass = getStatusClass(status);
+              const isPaid = r.pay_status === "已支付";
+              const paymentHtml = `<span class="payment-status ${isPaid ? 'paid' : 'unpaid'}">${isPaid ? '✓ 已付款' : '✗ 未付款'}</span>`;
+
+              html += `
+                <div class="reservation-card">
+                  <div class="reservation-header">
+                    <div>
+                      <div class="reservation-id">预约编号: #${r.reservation_id}</div>
+                      <div class="reservation-title">入园预约 - ${r.visitor_name || ''}</div>
+                    </div>
+                    <span class="status-badge ${statusClass}">${status}</span>
+                  </div>
+                  <div class="reservation-body">
+                    <div class="reservation-field">
+                      <div class="reservation-field-label">预约日期</div>
+                      <div class="reservation-field-value">${r.reserve_date || '-'}</div>
+                    </div>
+                    <div class="reservation-field">
+                      <div class="reservation-field-label">预约时段</div>
+                      <div class="reservation-field-value">${r.time_slot || '全天'}</div>
+                    </div>
+                    <div class="reservation-field">
+                      <div class="reservation-field-label">预约人数</div>
+                      <div class="reservation-field-value">${r.party_size || 1} 人</div>
+                    </div>
+                    <div class="reservation-field">
+                      <div class="reservation-field-label">预约公园</div>
+                      <div class="reservation-field-value">${r.area_name || '—'}</div>
+                    </div>
+                  </div>
+                  <div class="reservation-footer">
+                    <div class="reservation-time">票价: ¥${r.ticket_amount || 0}</div>
+                    <div>
+                      ${status === "待审核" ? `<button class="btn btn-sm btn-danger" onclick="cancelReservation(${r.reservation_id}, '${r.id_card_no}')">取消预约</button>` : ''}
+                    </div>
+                  </div>
+                </div>
+              `;
+            });
+
+            container.innerHTML = html;
+          } catch (e) {
+            container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">加载失败: ${Api.formatError(e)}</div></div>`;
+          }
+        }
+
+        function getStatusClass(status) {
+          switch(status) {
+            case "待审核": case "待确认": return "pending";
+            case "已通过": case "已批准": case "已确认": return "approved";
+            case "已拒绝": case "未通过": case "已取消": return "rejected";
+            case "已完成": return "completed";
+            default: return "pending";
+          }
+        }
+
+        window.cancelReservation = async function(reservationId, idCardNo) {
+          Common.confirm("确定要取消此预约吗？", async function() {
+            try {
+              await Api.requestJson("POST", `/api/visitor/reservations/${reservationId}/cancel?id_card_no=${encodeURIComponent(idCardNo)}`);
+              Common.showToast("预约已取消", "success");
+              loadReservations();
+            } catch (e) {
+              Common.showToast("取消失败: " + Api.formatError(e), "error");
+            }
+          });
+        };
+      })();
+    </script>
+  </body>
+</html>

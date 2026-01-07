@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>园区分布地图</title>
+    <link rel="stylesheet" href="/web/assets/css/common.css" />
+    <script src="https://webapi.amap.com/maps?v=2.0&key=2fa17571ada12cb8cb22fd2327235834"></script>
+    <script src="https://webapi.amap.com/ui/1.1/main.js"></script>
+    <style>
+        /* 基础布局样式 */
+        .content { padding: 20px; height: calc(100vh - 80px); box-sizing: border-box; }
+        .map-header { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb; }
+        .map-title { font-size: 24px; font-weight: 700; color: #1f2937; margin-bottom: 8px; }
+        .map-desc { font-size: 14px; color: #6b7280; line-height: 1.5; }
+        .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px; color: #666; z-index: 999; }
+        #mapContainer { width: 100%; height: calc(100% - 60px); border-radius: 8px; border: 1px solid #e5e7eb; position: relative; }
+
+        /* 地图信息窗口样式 */
+        .amap-info-window { padding: 0 !important; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); min-width: 280px; }
+        .park-info { padding: 12px 16px; }
+        .park-name { font-size: 16px; font-weight: bold; color: #2c6e31; margin-bottom: 6px; }
+        .park-desc { font-size: 12px; color: #666; line-height: 1.4; margin-bottom: 10px; }
+
+        /* 按钮容器与按钮样式 - 确保两个按钮并列 */
+        .btn-group { display: flex; gap: 8px; align-items: center; }
+        .park-detail-btn {
+            display: inline-block; padding: 6px 12px;
+            background: #2c6e31; color: white; font-size: 12px;
+            border-radius: 4px; transition: background 0.2s;
+            border: none; cursor: pointer;
+        }
+        .park-detail-btn:hover { background: #1f4e23; }
+        .park-reserve-btn {
+            display: inline-block; padding: 6px 12px;
+            background: #008B8B; color: white; font-size: 12px;
+            border-radius: 4px; transition: background 0.2s;
+            border: none; cursor: pointer;
+        }
+        .park-reserve-btn:hover { background: #00CED1; }
+
+        /* 详情弹窗样式 */
+        .park-detail-modal {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); display: none;
+            align-items: center; justify-content: center;
+            z-index: 9999; padding: 20px;
+        }
+        .park-detail-content {
+            background: white; width: 90%; max-width: 800px;
+            max-height: 90vh; overflow-y: auto; border-radius: 12px;
+            padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            position: relative;
+        }
+        .close-modal {
+            position: absolute; top: 20px; right: 20px;
+            font-size: 20px; cursor: pointer; color: #666;
+        }
+        .close-modal:hover { color: #000; }
+        .error-tip {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); text-align: center;
+            color: #dc2626; font-size: 14px; padding: 20px;
+        }
+
+        /* 预约表单样式（全绿色系） */
+        .reservation-modal {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); display: none;
+            align-items: center; justify-content: center;
+            z-index: 99999; padding: 20px;
+        }
+        .reservation-content {
+            background: white; width: 90%; max-width: 700px;
+            border-radius: 12px; padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15); position: relative;
+        }
+        .reservation-form-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 16px; margin-bottom: 20px;
+        }
+        @media (max-width: 768px) {
+            .reservation-form-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 480px) {
+            .reservation-form-grid { grid-template-columns: 1fr; }
+        }
+        .form-label {
+            display: block; margin-bottom: 4px;
+            font-size: 14px; color: #333;
+        }
+        .form-input {
+            width: 100%; padding: 8px 12px;
+            border: 1px solid #ddd; border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-input:focus {
+            outline: none; border-color: #2c6e31;
+        }
+        .submit-btn {
+            width: 100%; padding: 10px;
+            background: #2c6e31; color: white;
+            border: none; border-radius: 4px;
+            cursor: pointer; font-size: 16px;
+            margin-top: 10px; transition: background 0.2s;
+        }
+        .submit-btn:hover {
+            background: #1f4e23;
+        }
+        /* 新增：显示预约区域ID的提示样式 */
+        .resv-area-id-tip {
+            font-size: 12px; color: #2c6e31;
+            margin-bottom: 15px; text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <aside id="sidebar" class="sidebar"></aside>
+        <div class="main">
+            <header id="header" class="header"></header>
+            <main class="content container">
+                <div class="map-header">
+                    <h1 class="map-title">🌲 国家公园分布地图</h1>
+                    <p class="map-desc">
+                        本地图展示全国重点国家级公园及生态区的地理分布，点击标记可查看公园简介，
+                        点击「查看详情」可了解该公园的详细信息（含开放时间、交通指南、游客须知等）。
+                    </p>
+                </div>
+                <div id="mapContainer">
+                    <div class="loading" id="loadingTip">正在加载园区数据...</div>
+                    <div class="error-tip" id="errorTip" style="display: none;">数据加载失败，请刷新页面重试</div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 公园详情弹窗（仅展示详情，无任何按钮） -->
+    <div class="park-detail-modal" id="parkDetailModal">
+        <div class="park-detail-content">
+            <span class="close-modal" onclick="closeParkDetail()">×</span>
+            <div id="parkDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- 预约表单弹窗（绿色样式，显示区域ID） -->
+    <div class="reservation-modal" id="reservationModal">
+        <div class="reservation-content">
+            <span class="close-modal" onclick="closeReservationModal()">×</span>
+            <h2 style="color: #2c6e31; margin-bottom: 10px; text-align: center;">预约入园</h2>
+            <!-- 显示当前预约的区域ID -->
+            <div class="resv-area-id-tip" id="resvAreaIdTip">预约区域ID：<span id="showAreaId">0</span></div>
+            <!-- 隐藏的区域ID字段 -->
+            <input type="hidden" id="resvAreaId" value="">
+
+            <div class="reservation-form-grid">
+                <div>
+                    <label class="form-label">预约人姓名 *</label>
+                    <input type="text" id="resvName" class="form-input" placeholder="请输入姓名">
+                </div>
+                <div>
+                    <label class="form-label">身份证号 *</label>
+                    <input type="text" id="resvIdCard" class="form-input" placeholder="请输入身份证号">
+                </div>
+                <div>
+                    <label class="form-label">联系电话</label>
+                    <input type="tel" id="resvPhone" class="form-input" placeholder="选填">
+                </div>
+                <div>
+                    <label class="form-label">预约日期 *</label>
+                    <input type="date" id="resvDate" class="form-input">
+                </div>
+                <div>
+                    <label class="form-label">预约时段 *</label>
+                    <select id="resvTimeSlot" class="form-input">
+                        <option value="">请选择</option>
+                        <option value="上午">上午</option>
+                        <option value="下午">下午</option>
+                        <option value="全天">全天</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">预约人数 *</label>
+                    <!-- 修复：修正ID错误，从resvIdCard改为resvPeople -->
+                    <input type="number" id="resvPeople" class="form-input" min="1" value="1">
+                </div>
+            </div>
+
+            <button class="submit-btn" onclick="submitReservation()">提交预约</button>
+        </div>
+    </div>
+
+    <script src="/web/assets/js/api.js"></script>
+    <script src="/web/assets/js/auth.js"></script>
+    <script src="/web/assets/js/common.js"></script>
+
+    <script>
+        // 全局变量
+        let map = null;
+        let parkDataList = [];
+
+        // API请求封装
+                // API请求封装（增强错误处理）
+        async function requestApi(url, method = 'GET', data = {}) {
+            try {
+                const token = localStorage.getItem('token') || (typeof Auth !== 'undefined' ? Auth.getToken() : '');
+                // 无token时先提示登录
+                if (!token) {
+                    alert('请先登录！');
+                    window.location.href = '/web/pages/login.html';
+                    throw new Error('未登录');
+                }
+
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+                const options = { method, headers };
+                if (method !== 'GET' && Object.keys(data).length > 0) {
+                    options.body = JSON.stringify(data);
+                }
+
+                // 修复URL拼接（确保是 /api/visitor/reservations）
+                const fullUrl = `/api/visitor${url}`;
+                const response = await fetch(fullUrl, options);
+
+                // 解析后端返回的错误信息（关键）
+                let responseData;
+                try {
+                    responseData = await response.json();
+                } catch (e) {
+                    responseData = { detail: '服务器返回非JSON数据' };
+                }
+
+                if (!response.ok) {
+                    // 抛出包含后端详细错误的异常
+                    throw new Error(`${response.status} ${response.statusText}：${responseData.detail || '未知错误'}`);
+                }
+                return responseData;
+            } catch (error) {
+                console.error('API请求错误：', error);
+                throw error;
+            }
+        }
+
+        // 初始化地图
+        window.onload = async function() {
+            try {
+                document.getElementById('errorTip').style.display = 'none';
+                document.getElementById('loadingTip').style.display = 'block';
+
+                // 初始化高德地图
+                map = new AMap.Map('mapContainer', {
+                    zoom: 4,
+                    center: [108.95, 34.27],
+                    resizeEnable: true,
+                    showLabel: true,
+                    mapStyle: 'amap://styles/grassgreen'
+                });
+
+                // 获取园区数据
+                parkDataList = await requestApi('/areas');
+                document.getElementById('loadingTip').style.display = 'none';
+
+                // 无数据处理
+                if (parkDataList.length === 0) {
+                    document.getElementById('errorTip').innerText = '暂无园区数据';
+                    document.getElementById('errorTip').style.display = 'block';
+                    return;
+                }
+
+                // 渲染园区标记
+                parkDataList.forEach(park => {
+                    if (!park.longitude || !park.latitude) {
+                        console.warn(`园区【${park.area_name}】经纬度缺失，跳过标记`);
+                        return;
+                    }
+                    // 创建标记
+                    const marker = new AMap.Marker({
+                        position: [park.longitude, park.latitude],
+                        title: park.area_name,
+                        map: map,
+                        content: '<div style="font-size: 20px; line-height: 1;">📍</div>',
+                        offset: new AMap.Pixel(-16, -16)
+                    });
+
+                    // 创建信息窗口（两个按钮并列）
+                    const infoWindow = new AMap.InfoWindow({
+                        content: `
+                            <div class="park-info">
+                                <div class="park-name">${park.area_name || '未知园区'}</div>
+                                <div class="park-desc">${park.protect_rules || `(${park.area_type}，面积${park.area_size}公顷)`}</div>
+                                <div class="btn-group">
+                                    <button onclick="openParkDetail(${park.area_id})" class="park-detail-btn">查看详情</button>
+                                    <button onclick="openReservationModal(${park.area_id})" class="park-reserve-btn">预约入园</button>
+                                </div>
+                            </div>
+                        `,
+                        offset: new AMap.Pixel(0, -40)
+                    });
+
+                    // 标记点击事件：打开信息窗口
+                    marker.on('click', () => {
+                        infoWindow.open(map, marker.getPosition());
+                    });
+
+                    // 鼠标悬浮事件：放大地图
+                    marker.on('mouseover', () => {
+                        map.setZoomAndCenter(8, [park.longitude, park.latitude]);
+                    });
+                });
+
+                // 添加地图控件
+                map.addControl(new AMap.Scale());
+                map.addControl(new AMap.Zoom());
+                map.addControl(new AMap.MapType({ defaultType: 0 }));
+                map.addControl(new AMap.Geolocation({ enableHighAccuracy: true }));
+            } catch (error) {
+                document.getElementById('loadingTip').style.display = 'none';
+                document.getElementById('errorTip').style.display = 'block';
+                console.error('地图初始化失败：', error);
+            }
+        };
+
+        // 打开详情弹窗（仅展示详情，无按钮）
+        async function openParkDetail(areaId) {
+            try {
+                document.getElementById('parkDetailContent').innerHTML = '<div style="text-align:center; padding: 20px;">正在加载详情...</div>';
+                document.getElementById('parkDetailModal').style.display = 'flex';
+
+                // 获取园区详情
+                const parkDetail = await requestApi(`/areas/${areaId}`);
+
+                // 构建详情HTML（纯信息展示）
+                const detailHtml = `
+                    <h2 style="color: #2c6e31; margin-bottom: 16px;">${parkDetail.area_name || '未知园区'}</h2>
+                    <div style="margin-bottom: 20px; line-height: 1.6;">
+                        <p><strong>生态类型：</strong>${parkDetail.area_type || '未定义'}</p>
+                        <p><strong>面积：</strong>${parkDetail.area_size || '0'} 公顷</p>
+                        <p><strong>核心保护范围：</strong>${parkDetail.protect_rules || '暂无描述'}</p>
+                        <p><strong>环境适宜性评分：</strong>${parkDetail.score || '0'}</p>
+                    </div>
+                    <h3 style="margin: 20px 0 10px; color: #1f2937;">地理位置</h3>
+                    <div style="background: #f0fdf4; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                        <p><strong>经度：</strong>${parkDetail.longitude || '0'}</p>
+                        <p><strong>纬度：</strong>${parkDetail.latitude || '0'}</p>
+                    </div>
+                    <h3 style="margin: 20px 0 10px; color: #1f2937;">游客须知</h3>
+                    <div style="background: #f9fafb; padding: 16px; border-radius: 8px;">
+                        <p>1. 进入园区请遵守相关规定，保护生态环境</p>
+                        <p>2. ${parkDetail.area_type === '核心保护区' ? '核心保护区禁止游客进入' : '请按指定路线游览，禁止进入未开放区域'}</p>
+                        <p>3. 禁止携带火种进入林区，严防森林火灾</p>
+                        <p>4. 禁止投喂、伤害野生动物</p>
+                    </div>
+                `;
+
+                document.getElementById('parkDetailContent').innerHTML = detailHtml;
+            } catch (error) {
+                // 错误页面仅显示重试按钮
+                document.getElementById('parkDetailContent').innerHTML = `
+                    <div style="text-align:center; color: #dc2626; padding: 20px;">
+                        <p>详情加载失败</p>
+                        <button onclick="openParkDetail(${areaId})" class="park-detail-btn">重试</button>
+                    </div>
+                `;
+                console.error('获取园区详情失败：', error);
+            }
+        }
+
+        // 关闭详情弹窗
+        function closeParkDetail() {
+            document.getElementById('parkDetailModal').style.display = 'none';
+        }
+
+        // 打开预约表单弹窗（关联区域ID）
+        function openReservationModal(areaId) {
+            // 填充并显示区域ID
+            document.getElementById('resvAreaId').value = areaId;
+            document.getElementById('showAreaId').innerText = areaId;
+
+            // 重置表单
+            document.getElementById('resvName').value = '';
+            document.getElementById('resvIdCard').value = '';
+            document.getElementById('resvPhone').value = '';
+            document.getElementById('resvDate').value = '';
+            document.getElementById('resvTimeSlot').value = '';
+            document.getElementById('resvPeople').value = '1';
+
+            // 打开预约弹窗
+            document.getElementById('reservationModal').style.display = 'flex';
+
+            // 关闭详情弹窗（避免遮挡）
+            closeParkDetail();
+        }
+
+        // 关闭预约表单弹窗
+        function closeReservationModal() {
+            document.getElementById('reservationModal').style.display = 'none';
+        }
+
+        // 提交预约（传递区域ID到后端）
+                // 提交预约（传递区域ID到后端）
+        async function submitReservation() {
+            // 获取表单数据
+            const areaId = document.getElementById('resvAreaId').value;
+            const name = document.getElementById('resvName').value.trim();
+            const idCard = document.getElementById('resvIdCard').value.trim();
+            const phone = document.getElementById('resvPhone').value.trim();
+            const date = document.getElementById('resvDate').value;
+            const timeSlot = document.getElementById('resvTimeSlot').value;
+            const people = document.getElementById('resvPeople').value;
+
+            // 表单校验（增强版）
+            if (!name) { alert('请填写预约人姓名！'); return; }
+            if (!idCard) { alert('请填写身份证号！'); return; }
+            // 身份证号格式简单校验
+            const idCardReg = /^[1-9]\d{5}(18|19|20)\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$/;
+            if (idCard.length !== 18 || !idCardReg.test(idCard)) {
+                alert('请填写有效的18位身份证号！');
+                return;
+            }
+            if (!date) { alert('请选择预约日期！'); return; }
+            if (!timeSlot) { alert('请选择预约时段！'); return; }
+            const partySize = parseInt(people);
+            if (isNaN(partySize) || partySize < 1 || partySize > 20) {
+                alert('请填写1-20之间的有效预约人数！');
+                return;
+            }
+
+            try {
+                // 严格匹配后端Schema的请求体（关键修正）
+                const requestData = {
+                    visitor_name: name,          // 后端要求的字段名
+                    id_card_no: idCard,          // 后端要求的字段名
+                    phone: phone || null,        // 空值传null而非空字符串
+                    reserve_date: date,          // 格式：YYYY-MM-DD 匹配后端date类型
+                    time_slot: timeSlot,         // 上午/下午/全天
+                    party_size: partySize,       // 确保是整数
+                    area_id: areaId ? parseInt(areaId) : null, // 区域ID转整数，无则传null
+                    ticket_amount: null          // 后端自动计算，传null
+                };
+
+                // 调用后端预约接口（修复URL路径）
+                const res = await requestApi('/reservations', 'POST', requestData);
+
+                // 预约成功提示（适配后端返回格式）
+                alert(`预约成功！
+预约编号：${res.reservation_id || '未知'}
+预约区域ID：${areaId}
+应付金额：${res.ticket_amount || 0} 元
+状态：${res.status || '待审核'}`);
+                closeReservationModal();
+            } catch (error) {
+                // 详细的错误提示（区分401/500等）
+                let errorMsg = '预约失败：';
+                if (error.message.includes('401')) {
+                    errorMsg += '登录已过期，请重新登录！';
+                    // 触发重新登录（复用现有auth.js逻辑）
+                    if (typeof Auth !== 'undefined') {
+                        Auth.logout();
+                        window.location.href = '/web/pages/login.html';
+                    }
+                } else if (error.message.includes('500')) {
+                    errorMsg += '服务器内部错误，请联系管理员！';
+                } else if (error.message.includes('403')) {
+                    errorMsg += '您无预约权限，请检查用户角色！';
+                } else {
+                    errorMsg += error.message || '网络异常，请稍后重试';
+                }
+                alert(errorMsg);
+                console.error('预约提交失败：', error);
+            }
+        }
+
+        // 点击弹窗外部关闭
+        window.onclick = function(event) {
+            const detailModal = document.getElementById('parkDetailModal');
+            const resvModal = document.getElementById('reservationModal');
+            if (event.target === detailModal) {
+                closeParkDetail();
+            } else if (event.target === resvModal) {
+                closeReservationModal();
+            }
+        }
+
+        // 数据适配函数
+        function adaptParkData(rawData) {
+            return rawData.map(item => ({
+                area_id: item.area_id || item.id,
+                area_name: item.area_name || item.name,
+                area_type: item.area_type || item.type,
+                area_size: item.area_size || item.area,
+                longitude: item.longitude || item.lng,
+                latitude: item.latitude || item.lat,
+                protect_rules: item.protect_rules || item.main_protect,
+                score: item.score || item.suitable_score,
+                species_id: item.species_id || item.main_species_id
+            }));
+        }
+
+        // 初始化布局
+        (function() {
+            if (!Auth.requireLogin()) return;
+            Common.initLayout({ active: "park-map" });
+        })();
+    </script>
+</body>
+</html>
